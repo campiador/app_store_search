@@ -3,9 +3,11 @@ var express = require('express');
 var app = express();
 var bodyParser = require('body-parser');
 var urlencodedParser = bodyParser.urlencoded({ extended: true });
+
+const PORT = process.env.PORT || 5000;
  
 // Running Server Details.
-var server = app.listen(50001, function () {
+var server = app.listen(PORT, function () {
   var host = server.address().address
   var port = server.address().port
   console.log("Example app listening at %s:%s Port", host, port)
