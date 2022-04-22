@@ -47,7 +47,7 @@ app.get('/search_results', function (req, res) {
   "description", "score", "ratings", "size", "minInstalls", "maxInstalls",
   {
     label: "last updated",
-    value: (row, field) => transDate(row.updated);
+    value: (row, field) => transDate(row.updated)
   }, "version", "contentRating", "url"]; //TODO: , "search term", "rank"]
 
 	const opts = { fields };
