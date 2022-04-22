@@ -21,6 +21,7 @@ app.get('/', function (req, res) {
 function epochToStr(date) {
   var d = new Date(date);
   var dateStr = d.toISOString().split('T')[0];
+  return dateStr;
 }
 
 function transDate(item) {
