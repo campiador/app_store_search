@@ -34,7 +34,8 @@ app.get('/search_results', function (req, res) {
 	}
 
 
-	const fields = ["title", "developer", summary_or_description, "appId", "description"]; //TODO: , "search term", "rank"]
+	const fields = ["title", "developer", summary_or_description, "appId",
+  "description", "score", "ratings", "size"]; //TODO: , "search term", "rank"]
 
 	const opts = { fields };
 
