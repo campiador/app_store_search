@@ -5,19 +5,19 @@ var bodyParser = require('body-parser');
 var urlencodedParser = bodyParser.urlencoded({ extended: true });
 
 const PORT = process.env.PORT || 5000;
- 
+
 // Running Server Details.
 var server = app.listen(PORT, function () {
   var host = server.address().address
   var port = server.address().port
   console.log("Example app listening at %s:%s Port", host, port)
 });
- 
- 
+
+
 app.get('/', function (req, res) {
       res.sendfile('search_form.html');
 });
- 
+
 
 app.get('/search_results', function (req, res) {
 
@@ -32,9 +32,9 @@ app.get('/search_results', function (req, res) {
 	if (input_store == "ios") {
 	    summary_or_description = "description";
 	}
-	
-	
-	const fields = ["title", "developer", summary_or_description]; //TODO: , "search term", "rank"]
+
+
+	const fields = ["title", "developer", summary_or_description, "appId", "description"]; //TODO: , "search term", "rank"]
 
 	const opts = { fields };
 
@@ -53,7 +53,7 @@ app.get('/search_results', function (req, res) {
     }
 
     function save_std(data) {
-	
+
 	//var p1 = window.document.getElementById("p_1");
 	//p1.innerHTML = "Search finished!";
 
@@ -85,7 +85,8 @@ app.get('/search_results', function (req, res) {
 
 	gplay.search({
     	term: input_term,
-   	 num: input_limit
+   	 num: input_limit,
+     fullDetail: true
   	}).then(save_std, save_err);
     }
 
@@ -109,5 +110,3 @@ app.get('/search_results', function (req, res) {
     }
 
 });
-
-
