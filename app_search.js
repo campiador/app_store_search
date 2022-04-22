@@ -32,13 +32,6 @@ app.get('/search_results', function (req, res) {
 	if (input_store == "ios") {
 	    summary_or_description = "description";
 	}
-
-
-	const fields = ["title", "developer", summary_or_description, "appId",
-  "description", "score", "ratings", "size", "minInstalls", "maxInstalls",
-  "updated", "version", "contentRating", "url"]; //TODO: , "search term", "rank"]
-
-	const opts = { fields };
   function epochToStr(date) {
     var d = new Date(date);
     var dateStr = d.toISOString().split('T')[0];
@@ -49,6 +42,16 @@ app.get('/search_results', function (req, res) {
     item.updated = epochToStr(item.updated);
     return item;
   }
+
+	const fields = ["title", "developer", summary_or_description, "appId",
+  "description", "score", "ratings", "size", "minInstalls", "maxInstalls",
+  {
+    label: "last updated",
+    value: (row, field) => transDate(row.updated);
+  }, "version", "contentRating", "url"]; //TODO: , "search term", "rank"]
+
+	const opts = { fields };
+
 
 	const transformOpts = { highWaterMark: 16384, encoding: 'utf8', transDate };
 
