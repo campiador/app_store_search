@@ -18,16 +18,6 @@ app.get('/', function (req, res) {
       res.sendfile('search_form.html');
 });
 
-function epochToStr(date) {
-  var d = new Date(date);
-  var dateStr = d.toISOString().split('T')[0];
-  return dateStr;
-}
-
-function transDate(item) {
-  item.updated = epochToStr(item.updated);
-  return item;
-}
 
 app.get('/search_results', function (req, res) {
 
@@ -49,6 +39,16 @@ app.get('/search_results', function (req, res) {
   "updated", "version", "contentRating", "url"]; //TODO: , "search term", "rank"]
 
 	const opts = { fields };
+  function epochToStr(date) {
+    var d = new Date(date);
+    var dateStr = d.toISOString().split('T')[0];
+    return dateStr;
+  }
+
+  function transDate(item) {
+    item.updated = epochToStr(item.updated);
+    return item;
+  }
 
 	const transformOpts = { highWaterMark: 16384, encoding: 'utf8', transDate };
 
