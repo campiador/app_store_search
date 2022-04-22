@@ -40,7 +40,21 @@ app.get('/search_results', function (req, res) {
 
 	const opts = { fields };
 
-	const transformOpts = { highWaterMark: 16384, encoding: 'utf8' };
+
+  function epochToStr(date) {
+    var d = new Date(date);
+    var dateStr = d.toISOString().split('T')[0];
+  }
+
+  function transDate() {
+    return (item) = ( {
+      ...item,
+      updated: epochToStr(updated)
+    });
+  }
+
+
+	const transformOpts = { highWaterMark: 16384, encoding: 'utf8', transDate };
 
 	try {
 	    const csv = json2csv(data, opts, transformOpts);
