@@ -32,15 +32,22 @@ app.get('/search_results', function (req, res) {
 	if (input_store == "ios") {
 	    summary_or_description = "description";
 	}
-  function epochToStr(date) {
-    var d = new Date(date);
+  function epochToStr(epochDate) {
+    var d = new Date(epochDate);
     var dateStr = d.toISOString().split('T')[0];
     return dateStr;
   }
 
-  function transDate(item) {
-    item.updated = epochToStr(item.updated);
-    return item;
+  function transDate(lastUpdateEpoch) {
+    try {
+      var stringDate = epochToStr(lastUpdateEpoch);
+      return stringDate;
+    } catch (e) {
+
+    } finally {
+
+    }
+    return lastUpdateEpoch;
   }
 
 	const fields = ["title", "developer", summary_or_description, "appId",
@@ -53,7 +60,7 @@ app.get('/search_results', function (req, res) {
 	const opts = { fields };
 
 
-	const transformOpts = { highWaterMark: 16384, encoding: 'utf8', transDate };
+	const transformOpts = { highWaterMark: 16384, encoding: 'utf8'};
 
 	try {
 	    const csv = json2csv(data, opts, transformOpts);
