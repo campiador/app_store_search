@@ -126,8 +126,7 @@ app.get('/search_results', function (req, res) {
     	term: input_term,
    	num: input_limit,
 	page: 1,
-	country: 'us',
-	lang: 'lang'
+	country: 'us'
   	}).then(save_std, save_err);
     }
 
