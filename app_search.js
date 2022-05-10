@@ -25,109 +25,116 @@ app.get('/search_results', function (req, res) {
     var input_limit = req.query.n_results;
     var input_store = req.query.os;
 
-    function json_to_csv(data)
-    {
-	const json2csv = require('json2csv').parse;
-	var summary_or_description = "summary";
-	if (input_store == "ios") {
-	    summary_or_description = "description";
-	}
-  function epochToStr(epochDate) {
-    var d = new Date(epochDate);
-    var dateStr = d.toISOString().split('T')[0];
-    return dateStr;
-  }
-
-  function transDate(lastUpdateEpoch) {
-    try {
-      var stringDate = epochToStr(lastUpdateEpoch);
-      return stringDate;
-    } catch (e) {
-
-    } finally {
-
-    }
-    return lastUpdateEpoch;
-  }
-
-	const fields = ["title", "developer", summary_or_description, "appId",
-  "description", "score", "ratings", "size", "minInstalls", "maxInstalls",
-  {
-    label: "last updated",
-    value: (row, field) => transDate(row.updated)
-  }, "version", "contentRating", "url"]; //TODO: , "search term", "rank"]
-
-	const opts = { fields };
-
-
-	const transformOpts = { highWaterMark: 16384, encoding: 'utf8'};
-
-	try {
-	    const csv = json2csv(data, opts, transformOpts);
-	    console.log(csv);
-	    return csv;
-
-	} catch (err) {
-	    console.error(err);
-	    console.log("Error happened in json2csv!");
-	}
-
-    }
-
-    function save_std(data) {
+    function save_std(data, selected_os) {
 
 	//var p1 = window.document.getElementById("p_1");
 	//p1.innerHTML = "Search finished!";
+    	var json_string_results = JSON.stringify(data);
+    	console.log(json_string_results);
 
-	var json_string_results = JSON.stringify(data);
-	console.log(json_string_results);
-
-	var csv_data = json_to_csv(data);
-	console.log(csv_data);
+    	var csv_data = json_to_csv(data);
+    	console.log(csv_data);
 
 
-	res.attachment(input_term + "_" + input_limit + "_" + input_store +'.csv');
-	res.status(200).send(csv_data);
+    	res.attachment(input_term + "_" + input_limit + "_" + input_store +'.csv');
+    	res.status(200).send(csv_data);
     }
 
+    function json_to_csv(data)
+    {
+    	const json2csv = require('json2csv').parse;
+    	var summary_or_description = "summary";
+    	if (input_store == "ios") {
+    	    summary_or_description = "description";
+    	}
+      function epochToStr(epochDate) {
+        var d = new Date(epochDate);
+        var dateStr = d.toISOString().split('T')[0];
+        return dateStr;
+      }
+
+      function transDateAndroid(lastUpdateEpoch) {
+        try {
+          var stringDate = epochToStr(lastUpdateEpoch);
+          return stringDate;
+        } catch (e) {
+
+        } finally {
+
+        }
+        return lastUpdateEpoch;
+      }
+
+
+    	const fields = ["title", "developer", summary_or_description, "appId",
+      "description", "score", "ratings", "size", "minInstalls", "maxInstalls",
+      {
+        label: "last updated",
+        value: (row, field) => transDateAndroid(row.updated)
+      }, "version", "contentRating", "url"]; //TODO: , "search term", "rank"]
+
+    	const opts = { fields };
+
+    	const transformOpts = { highWaterMark: 16384, encoding: 'utf8'};
+
+    	try {
+    	    const csv = json2csv(data, opts, transformOpts);
+    	    console.log(csv);
+    	    return csv;
+
+    	} catch (err) {
+    	    console.error(err);
+    	    console.log("Error happened in json2csv!");
+    	}
+
+    }
 
     function save_err(data) {
-	console.log("NodeJS> Error! " + data);
-	res.send("Error in Node.JS! Contact admin!")
+  	console.log("NodeJS> Error! " + data);
+  	res.send("Error in Node.JS! Contact admin!")
     }
 
     if (input_store == "android") {
-	try {
-		var gplay = require('google-play-scraper');
-	}  catch(e) {
-		console.error(e.message);
-		console.error("google-play-scraper is probably not found. Try running `npm i google-play-scraper`.");
-		process.exit(e.code);
-	}
+    	try {
+    		var gplay = require('google-play-scraper');
+    	}  catch(e) {
+    		console.error(e.message);
+    		console.error("google-play-scraper is probably not found. Try running `npm i google-play-scraper`.");
+    		process.exit(e.code);
+    	}
 
-	gplay.search({
-    	term: input_term,
-   	 num: input_limit,
-     fullDetail: true
-  	}).then(save_std, save_err);
+    	gplay.search({
+        	term: input_term,
+       	 num: input_limit,
+         fullDetail: true
+      	}).then(save_std, save_err);
     }
 
     else { //input == "ios"
 
-	try {
-		var store = require('app-store-scraper');
-	}  catch(e) {
-		console.error(e.message);
-		console.error("app-store-scraper is probably not found. Try running `npm i app-store-scraper`.");
-		process.exit(e.code);
-	}
+    	try {
+    		var store = require('app-store-scraper');
+    	}  catch(e) {
+    		console.error(e.message);
+    		console.error("app-store-scraper is probably not found. Try running `npm i app-store-scraper`.");
+    		process.exit(e.code);
+    	}
 
-	store.search({
-    	term: input_term,
-   	num: input_limit,
-	page: 1,
-	country: 'us'
-  	}).then(save_std, save_err);
+    	store.search({
+        	 term: input_term,
+         	 num: input_limit,
+      	   page: 1,
+      	   country: 'us'
+      	}).then(save_std, save_err);
     }
 
 });
+
+
+function get_ios_rating(id_code) {
+  store.ratings({
+    id: id_code,
+  })
+  .then(console.log)
+  .catch(console.log);
+}
