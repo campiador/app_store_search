@@ -83,7 +83,14 @@ app.get('/search_results', function (req, res) {
         value: (row, field) => input_store == "ios" ? "N/A" : row.summary
 
       },
-      "appId", "description", "score", "ratings", "size",
+      "appId", "description", "score", "ratings",
+
+      {
+        label: "size",
+        value: (row, field) => input_store == "ios" ?
+        parseFloat(row.size).toFixed(2) + " MB" : row.size
+
+      },
 
       {
         label: "min installs",
