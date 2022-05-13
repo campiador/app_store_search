@@ -88,7 +88,7 @@ app.get('/search_results', function (req, res) {
       {
         label: "size",
         value: (row, field) => input_store == "ios" ?
-        parseFloat(row.size).toFixed(2) + " MB" : row.size
+        parseFloat(row.size / 1000000).toFixed(2) + " MB" : row.size
 
       },
 
