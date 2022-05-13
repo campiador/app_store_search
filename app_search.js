@@ -77,11 +77,24 @@ app.get('/search_results', function (req, res) {
       }
 
 
-    	const fields = ["title", "developer", "summary", "appId",
-      "description", "score", "ratings", "size", "minInstalls", "maxInstalls",
+    	const fields = ["title", "developer",
       {
-        label: "last updated",
-        value: (row, field) => transDateAndroid(row.updated)
+        label: "summary",
+        value: (row, field) => input_store == "ios" ? "N/A" : row.summary
+
+      },
+      "appId", "description", "score", "ratings", "size",
+
+      {
+        label: "min installs",
+        value: (row, field) => input_store == "ios" ? "N/A" : row.minInstalls
+
+      },
+
+      {
+        label: "max installs",
+        value: (row, field) => input_store == "ios" ? "N/A" : row.maxInstalls
+
       }, "version", "contentRating", "url"]; //TODO: , "search term", "rank"]
 
     	const opts = { fields };
