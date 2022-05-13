@@ -32,6 +32,17 @@ app.get('/search_results', function (req, res) {
     	var json_string_results = JSON.stringify(data);
     	console.log(json_string_results);
 
+      /*
+      if (selected_os == "ios") {
+
+          for (var app in data) {
+
+            var ratingCount = get_ios_rating(app["id"]);
+
+          }
+
+      }*/
+
     	var csv_data = json_to_csv(data);
     	console.log(csv_data);
 
@@ -66,7 +77,7 @@ app.get('/search_results', function (req, res) {
       }
 
 
-    	const fields = ["title", "developer", summary_or_description, "appId",
+    	const fields = ["title", "developer", "summary", "appId",
       "description", "score", "ratings", "size", "minInstalls", "maxInstalls",
       {
         label: "last updated",
@@ -125,7 +136,7 @@ app.get('/search_results', function (req, res) {
          	 num: input_limit,
       	   page: 1,
       	   country: 'us'
-      	}).then(save_std, save_err);
+      	}).then(function (data) {return save_std(data, "ios")}, save_err);
     }
 
 });
