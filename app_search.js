@@ -102,7 +102,12 @@ app.get('/search_results', function (req, res) {
         label: "max installs",
         value: (row, field) => input_store == "ios" ? "N/A" : row.maxInstalls
 
-      }, "version", "contentRating", "url"]; //TODO: , "search term", "rank"]
+      },
+      {
+        label: "last updated",
+        value: (row, field) => transDateAndroid(row.updated)
+      },
+      "version", "contentRating", "url"]; //TODO: , "search term", "rank"]
 
     	const opts = { fields };
 
