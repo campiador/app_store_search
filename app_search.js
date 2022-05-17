@@ -157,8 +157,8 @@ app.get('/search_results', function (req, res) {
       	   page: 1,
       	   country: 'us'
       	})
-        // the async function waits and gets all the ratings first 
-        .then(async function (data) {return await get_all_ratings(data, "ios")})
+        // the async function waits and gets all the ratings first
+        .then(async function (data) {return await get_all_ratings(data, appleStore)})
         .catch(console.log("error getting apple store ratings"))
         .then(function (data) {return save_std(data, "ios")}, save_err);
     }
@@ -166,10 +166,9 @@ app.get('/search_results', function (req, res) {
 });
 
 
-async function get_all_ratings(apps, selected_os) {
+async function get_all_ratings(apps, appStore) {
 
   return new Promise(async function(resolve, reject) {
-  if(selected_os == "ios") {
 
     const ratingPromiseList = [];
     //console.log(apps);
@@ -177,7 +176,7 @@ async function get_all_ratings(apps, selected_os) {
       //console.log(app);
       let app_id_code = app["id"];
 
-      let app_rating = store.ratings({
+      let app_rating = appStore.ratings({
           id: app_id_code,
         });
 
@@ -194,17 +193,8 @@ async function get_all_ratings(apps, selected_os) {
     }).catch(err => reject(apps));
 
     console.log("returned here");
-  }
-  else resolve(apps);
+
     });
 
 
-}
-
-function get_ios_app_rating(id_code) {
-  store.ratings({
-    id: id_code,
-  })
-  .then(response => response["ratings"])
-  .catch("error");
 }
