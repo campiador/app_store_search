@@ -144,28 +144,67 @@ app.get('/search_results', function (req, res) {
     else { //input == "ios"
 
     	try {
-    		var store = require('app-store-scraper');
+    		var appleStore = require('app-store-scraper');
     	}  catch(e) {
     		console.error(e.message);
     		console.error("app-store-scraper is probably not found. Try running `npm i app-store-scraper`.");
     		process.exit(e.code);
     	}
 
-    	store.search({
+    	appleStore.search({
         	 term: input_term,
          	 num: input_limit,
       	   page: 1,
       	   country: 'us'
-      	}).then(function (data) {return save_std(data, "ios")}, save_err);
+      	})
+        // the async function waits and gets all the ratings first 
+        .then(async function (data) {return await get_all_ratings(data, "ios")})
+        .catch(console.log("error getting apple store ratings"))
+        .then(function (data) {return save_std(data, "ios")}, save_err);
     }
 
 });
 
 
-function get_ios_rating(id_code) {
+async function get_all_ratings(apps, selected_os) {
+
+  return new Promise(async function(resolve, reject) {
+  if(selected_os == "ios") {
+
+    const ratingPromiseList = [];
+    //console.log(apps);
+    apps.forEach((app, i) => {
+      //console.log(app);
+      let app_id_code = app["id"];
+
+      let app_rating = store.ratings({
+          id: app_id_code,
+        });
+
+      ratingPromiseList.push(app_rating);
+    });
+
+    await Promise.all(ratingPromiseList).then((values) => {
+        for (let i = 0; i < values.length; i++) {
+          console.log(i + ". app id: " + apps[i]["id"] + ", ratings: " + values[i]["ratings"]);
+          apps[i]["ratings"] = values[i]["ratings"];
+        }
+        console.log("about to resolve");
+        resolve(apps);
+    }).catch(err => reject(apps));
+
+    console.log("returned here");
+  }
+  else resolve(apps);
+    });
+
+
+}
+
+function get_ios_app_rating(id_code) {
   store.ratings({
     id: id_code,
   })
-  .then(console.log)
-  .catch(console.log);
+  .then(response => response["ratings"])
+  .catch("error");
 }
