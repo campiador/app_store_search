@@ -29,7 +29,7 @@ app.get('/search_results', function (req, res) {
 
 	//var p1 = window.document.getElementById("p_1");
 	//p1.innerHTML = "Search finished!";
-      console.console.log("results were returned!");
+      console.log("results were returned!");
     	var json_string_results = JSON.stringify(data);
     	console.log(json_string_results);
 
