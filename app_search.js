@@ -137,6 +137,7 @@ app.get('/search_results', function (req, res) {
     	try {
     		var gplay = require('google-play-scraper');
     	}  catch(e) {
+        console.log(e);
     		console.error(e.message);
     		console.error("google-play-scraper is probably not found. Try running `npm i google-play-scraper`.");
     		process.exit(e.code);
