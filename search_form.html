@@ -7,7 +7,7 @@
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
   <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
 
-<script>  
+<script>
 $(document).ready(function(){
     $("#submit1").on("click", function(){
         $("#p_1").text("Searching...");
@@ -18,26 +18,26 @@ $(window).unload(function(){
    $("#p_1").text("Click submit or press 'Enter' to save your search results.");
 });
 </script>
-  
+
 </head>
 
 <body data-gramm="true" data-gramm_editor="true" data-gramm_id="083dbac3-a54b-5219-bd85-40d396e36df9">
 
-<div class="container">  
+<div class="container">
 <h1>App Search</h1>
 <p id="p_1">Click submit or press 'Enter' to save your search results.</p>
 
 <div class="container">
 <form action="/search_results" method="get">
 	<fieldset>
-	
+
 	<legend>Search apps and save results</legend>
-	
+
 	Search query:<br>
 	<input type="search" name="search_query" placeholder="Type here" autofocus required><br>
 	<br>
 	Number of results:<br>
-	<input type="number" name="n_results" min="1" max="200" value="10" autocomplete="on" required><br>
+	<input type="number" name="n_results" min="1" max="200" value="20" autocomplete="on" required><br>
 	<br>
 	<div class="radio">
 	<label><input type="radio" name="os" value="android" checked>Google Play</input>
@@ -46,7 +46,7 @@ $(window).unload(function(){
 	<div class="radio">
         <label><input type="radio" name="os" value="ios" >Apple App Store</input>
 	</div>
-	<!--<input type="radio" name="os" value="android" checked>Google Play</input>    
+	<!--<input type="radio" name="os" value="android" checked>Google Play</input>
 	<input type="radio" name="os" value="ios" >Apple App Store</input>
 -->
 	<br>
@@ -64,7 +64,7 @@ $(window).unload(function(){
 <p><strong>Note:</strong> This is a work in progress.</p>
 
 <script>
-function showElement(elem_id) 
+function showElement(elem_id)
 {
 	document.getElementById(elem_id).style.display = "inline";
 }
@@ -75,4 +75,3 @@ function showElement(elem_id)
 </div>
 </body>
 </html>
-
