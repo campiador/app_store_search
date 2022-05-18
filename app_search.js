@@ -69,7 +69,7 @@ app.get('/search_results', function (req, res) {
           var stringDate = epochToStr(lastUpdateEpoch);
           return stringDate;
         } catch (e) {
-
+          console.log("error converting date:" + e);
         } finally {
 
         }
@@ -103,10 +103,12 @@ app.get('/search_results', function (req, res) {
         value: (row, field) => input_store == "ios" ? "N/A" : row.maxInstalls
 
       },
+
       {
         label: "last updated",
         value: (row, field) => transDateAndroid(row.updated)
       },
+
       "version", "contentRating", "url"]; //TODO: , "search term", "rank"]
 
     	const opts = { fields };
