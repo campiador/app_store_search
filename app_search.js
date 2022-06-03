@@ -110,7 +110,7 @@ app.get('/search_results', function (req, res) {
         value: (row, field) => transDateAndroid(row.updated)
       },
 
-      "version", "contentRating", "url"]; //TODO: , "search term", "rank"]
+      "version", "contentRating", "url", "price"]; //TODO: , "search term", "rank"]
 
     	const opts = { fields };
 
