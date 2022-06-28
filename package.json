@@ -2,7 +2,7 @@
   "dependencies": {
     "app-store-scraper": "^0.17.0",
     "express": "^4.17.3",
-    "google-play-scraper": "^8.1.0",
+    "google-play-scraper": "^9.0.0",
     "json2csv": "^5.0.7"
   }
 }
