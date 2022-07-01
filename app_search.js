@@ -89,7 +89,9 @@ app.get('/search_results', function (req, res) {
       {
         label: "size",
         value: (row, field) => input_store == "ios" ?
-        parseFloat(row.size / 1000000).toFixed(2) + "M" : row.size
+        parseFloat(row.size / 1000000).toFixed(2) + "M" :
+        // android
+        row.size
 
       },
 
@@ -174,7 +176,7 @@ app.get('/search_results', function (req, res) {
 
 });
 
-
+/* only used for apple app store */
 async function get_all_ratings(apps, appStore) {
 
   return new Promise(async function(resolve, reject) {
