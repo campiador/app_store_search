@@ -90,24 +90,17 @@ async function processFirstPage (html, opts, savedApps, mappings) {
     score: [0, 4, 1]
   };
 
+  removeUnneededSections(html, mappings);
+
   const sections = R.path(mappings.sections, html);
-  let moreResultsSection;
-  let mainApp;
-  if (sections.length === 1) {
-    moreResultsSection = sections[0];
-  } else {
-    moreResultsSection = sections.filter(section => R.path(SECTIONS_MAPPING.title, section) === MORE_RESULTS)[0];
-    if (moreResultsSection) {
-      mainApp = scriptData.extractor(mainAppMapping)(R.path(mappings.app, html));
-    } else if (R.path(SECTIONS_MAPPING.noResults, sections[0])) {
-      throw Error(R.path(SECTIONS_MAPPING.noResults, sections[0]));
-    } else {
-      moreResultsSection = sections[0];
-    }
-  }
+  if (noResultsFound(sections, opts)) return [];
+
+  const moreResultsSection = sections.filter(section => isMoreSection(section))[0];
+  const mainAppSection = R.path(mappings.app, html);
+
   const processedApps = R.map(scriptData.extractor(moreResultsMapping), R.path(SECTIONS_MAPPING.apps, moreResultsSection));
-  if (mainApp) {
-    processedApps.unshift(mainApp);
+  if (mainAppSection) {
+    processedApps.unshift(scriptData.extractor(mainAppMapping)(mainAppSection));
   }
 
   const apps = opts.fullDetail
@@ -116,6 +109,41 @@ async function processFirstPage (html, opts, savedApps, mappings) {
   const token = R.path(SECTIONS_MAPPING.token, moreResultsSection);
 
   return checkFinished(opts, [...savedApps, ...apps], token);
+}
+
+function isMoreSection (section) {
+  const sectionTitle = R.path(SECTIONS_MAPPING.title, section);
+  return R.is(String, sectionTitle) && R.isEmpty(sectionTitle);
+}
+
+/**
+ * Removes unused sections that contain no app informations
+ * Removed sections:
+ * * About these results
+ * * Suggested message
+ *
+ * Note: For EU countries the suggested message is shown before the About section
+ *       while for no result it is reverted
+ */
+function removeUnneededSections (html, mappings) {
+  removeSectionsIfPathValueOfType(html, SECTIONS_MAPPING.aboutResultsTitle, String);
+  // if the search function does no longer throw when no result was returned
+  // mapping SECTIONS_MAPPING.suggestedResultDescritpion can be replaced with SECTIONS_MAPPING.noResult mapping
+  removeSectionsIfPathValueOfType(html, [...mappings.sections, 0, ...SECTIONS_MAPPING.suggestedResultDescritpion], String);
+  removeSectionsIfPathValueOfType(html, SECTIONS_MAPPING.aboutResultsTitle, String);
+}
+
+function removeSectionsIfPathValueOfType (html, path, type) {
+  if (R.is(type, R.path(path, html))) {
+    R.path(INITIAL_MAPPINGS.sections, html).shift();
+  }
+}
+
+function noResultsFound (sections, opts) {
+  return sections.some(section => {
+    const noResults = R.path(SECTIONS_MAPPING.noResults, section);
+    return R.is(String, noResults) && noResults.endsWith(`<b>${opts.term}</b>`);
+  });
 }
 
 const INITIAL_MAPPINGS = {
@@ -127,10 +155,10 @@ const SECTIONS_MAPPING = {
   title: [22, 1, 0],
   token: [22, 1, 3, 1],
   apps: [22, 0],
-  noResults: [25, 0, 0, 0, 1]
+  noResults: [25, 0, 0, 0, 1],
+  suggestedResultDescritpion: [25, 0, 0, 1, 1],
+  aboutResultsTitle: ['ds:4', 0, 1, 0, 31, 0]
 };
-
-const MORE_RESULTS = 'More results';
 
 function getPriceGoogleValue (value) {
   switch (value.toLowerCase()) {
