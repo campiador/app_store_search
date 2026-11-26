@@ -11,6 +11,30 @@ const PORT = process.env.PORT || 5000;
 // returns only about 30); the Apple App Store returns about 200 at most.
 const MAX_RESULTS = 200;
 
+// Each search briefly uses 100-200 MB; Render's free instance has 512 MB.
+// Run at most MAX_ACTIVE searches at once; others wait their turn.
+const MAX_ACTIVE = 2;
+let active = 0;
+const waiting = [];
+function acquire() {
+  if (active < MAX_ACTIVE) { active++; return Promise.resolve(); }
+  return new Promise((resolve) => waiting.push(resolve));
+}
+function release() {
+  const next = waiting.shift();
+  if (next) { next(); } else { active--; }
+}
+
+// Keep only the fields the CSV uses (plus iOS id for the ratings lookup), so large
+// fields like screenshots, HTML descriptions and reviews aren't held in memory.
+const KEEP = ["id", "title", "developer", "summary", "appId", "description", "score", "ratings",
+  "size", "minInstalls", "maxInstalls", "updated", "version", "contentRating", "url", "price"];
+function slim(app) {
+  const out = {};
+  KEEP.forEach((k) => { if (app[k] !== undefined) { out[k] = app[k]; } });
+  return out;
+}
+
 var server;
 import('google-play-scraper').then(function (mod) {
   gplay = mod.default;
@@ -105,26 +129,17 @@ app.get('/search_results', function (req, res) {
     return json2csv(data, { fields });
   }
 
-  if (input_store == "android") {
-    gplay.search({
-      term: input_term,
-      num: input_limit
-    })
-      .then(add_android_details)
-      .then(send_csv)
-      .catch(send_error);
-  }
-  else { // ios
-    appleStore.search({
-      term: input_term,
-      num: input_limit,
-      page: 1,
-      country: 'us'
-    })
-      .then(function (data) { return add_ios_ratings(data, appleStore); })
-      .then(send_csv)
-      .catch(send_error);
-  }
+  acquire().then(function () {
+    var search;
+    if (input_store == "android") {
+      search = gplay.search({ term: input_term, num: input_limit })
+        .then((apps) => add_android_details(apps.map(slim)));
+    } else { // ios
+      search = appleStore.search({ term: input_term, num: input_limit, page: 1, country: 'us' })
+        .then((apps) => add_ios_ratings(apps.map(slim), appleStore));
+    }
+    return search.then(send_csv).catch(send_error);
+  }).finally(release);
 });
 
 /* Run fn on each item, a few at a time, retrying failures. If an item still fails,
@@ -166,7 +181,7 @@ async function map_with_retry(items, fn, fallback, label) {
    (what fullDetail: true used to do). If a lookup keeps failing, the app keeps its basic fields. */
 function add_android_details(apps) {
   return map_with_retry(apps,
-    async (app) => Object.assign({}, app, await gplay.app({ appId: app.appId })),
+    async (app) => slim(Object.assign({}, app, await gplay.app({ appId: app.appId }))),
     (app) => app,
     "Google Play details");
 }

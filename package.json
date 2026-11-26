@@ -2,7 +2,7 @@
   "name": "app-store-search",
   "private": true,
   "scripts": {
-    "start": "node app_search.js"
+    "start": "node --max-old-space-size=256 app_search.js"
   },
   "engines": {
     "node": "22.x"
