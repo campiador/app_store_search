@@ -1,4 +1,12 @@
 {
+  "name": "app-store-search",
+  "private": true,
+  "scripts": {
+    "start": "node app_search.js"
+  },
+  "engines": {
+    "node": "18.x"
+  },
   "dependencies": {
     "app-store-scraper": "^0.17.0",
     "express": "^4.17.3",
