@@ -7,6 +7,8 @@ var gplay; // google-play-scraper v10 is an ES module, loaded before the server 
 var app = express();
 
 const PORT = process.env.PORT || 5000;
+// iOS "ratings" is Apple's userRatingCount from the search results. (The old per-app
+// ratings lookup misread counts of 1,000+, e.g. "4,930 Ratings" became 4.)
 // The paper used 200 results per search. Google Play allows up to 250 (but currently
 // returns only about 30); the Apple App Store returns about 200 at most.
 const MAX_RESULTS = 200;
@@ -25,9 +27,9 @@ function release() {
   if (next) { next(); } else { active--; }
 }
 
-// Keep only the fields the CSV uses (plus iOS id for the ratings lookup), so large
+// Keep only the fields the CSV uses, so large
 // fields like screenshots, HTML descriptions and reviews aren't held in memory.
-const KEEP = ["id", "title", "developer", "summary", "appId", "description", "score", "ratings",
+const KEEP = ["title", "developer", "summary", "appId", "description", "score", "ratings",
   "size", "minInstalls", "maxInstalls", "updated", "version", "contentRating", "url", "price"];
 function slim(app) {
   const out = {};
@@ -136,7 +138,7 @@ app.get('/search_results', function (req, res) {
         .then((apps) => add_android_details(apps.map(slim)));
     } else { // ios
       search = appleStore.search({ term: input_term, num: input_limit, page: 1, country: 'us' })
-        .then((apps) => add_ios_ratings(apps.map(slim), appleStore));
+        .then((apps) => apps.map((app) => Object.assign(slim(app), { ratings: app.reviews })));
     }
     return search.then(send_csv).catch(send_error);
   }).finally(release);
@@ -184,15 +186,4 @@ function add_android_details(apps) {
     async (app) => slim(Object.assign({}, app, await gplay.app({ appId: app.appId }))),
     (app) => app,
     "Google Play details");
-}
-
-/* Apple's search results don't include the number of ratings, so look each app up.
-   If a lookup keeps failing, that app's rating count is reported as N/A. */
-async function add_ios_ratings(apps, appStore) {
-  const counts = await map_with_retry(apps,
-    async (app) => (await appStore.ratings({ id: app.id })).ratings,
-    () => 'N/A',
-    "App Store ratings");
-  apps.forEach((app, i) => { app.ratings = counts[i]; });
-  return apps;
 }
