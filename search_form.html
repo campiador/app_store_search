@@ -1,77 +1,141 @@
-<html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
   <title>MGH App Search</title>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
-  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
-  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
-
-<script>
-$(document).ready(function(){
-    $("#submit1").on("click", function(){
-        $("#p_1").text("Searching...");
-    });
-});
-
-$(window).unload(function(){
-   $("#p_1").text("Click submit or press 'Enter' to save your search results.");
-});
-</script>
-
+  <style>
+    body { padding-top: 10px; }
+    .container { max-width: 640px; }
+    #status { margin-top: 20px; }
+    .spinner {
+      display: inline-block; width: 16px; height: 16px; margin-right: 8px;
+      vertical-align: -3px; border: 3px solid #bce8f1; border-top-color: #31708f;
+      border-radius: 50%; animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
 </head>
-
-<body data-gramm="true" data-gramm_editor="true" data-gramm_id="083dbac3-a54b-5219-bd85-40d396e36df9">
-
+<body>
 <div class="container">
-<h1>App Search</h1>
-<p id="p_1">Click submit or press 'Enter' to save your search results.</p>
+  <h1>App Search</h1>
+  <p>Search Google Play or the Apple App Store and download the results as a CSV file.</p>
 
-<div class="container">
-<form action="/search_results" method="get">
-	<fieldset>
+  <form id="search_form" action="/search_results" method="get">
+    <fieldset id="fields">
+      <div class="form-group">
+        <label for="search_query">Search query</label>
+        <input class="form-control" type="search" id="search_query" name="search_query"
+               placeholder="e.g. opioid addiction recovery" autofocus required>
+      </div>
 
-	<legend>Search apps and save results</legend>
+      <div class="form-group">
+        <label for="n_results">Number of results (1&ndash;200)</label>
+        <input class="form-control" type="number" id="n_results" name="n_results"
+               min="1" max="200" value="200" required>
+      </div>
 
-	Search query:<br>
-	<input type="search" name="search_query" placeholder="Type here" autofocus required><br>
-	<br>
-	Number of results:<br>
-	<input type="number" name="n_results" min="1" max="1000" value="100" autocomplete="on" required><br>
-	<br>
-	<div class="radio">
-	<label><input type="radio" name="os" value="android" checked>Google Play</input>
-	</div>
+      <div class="form-group">
+        <label>Store</label>
+        <div class="radio"><label><input type="radio" name="os" value="android" checked> Google Play</label></div>
+        <div class="radio"><label><input type="radio" name="os" value="ios"> Apple App Store</label></div>
+      </div>
 
-	<div class="radio">
-        <label><input type="radio" name="os" value="ios" >Apple App Store</input>
-	</div>
-	<!--<input type="radio" name="os" value="android" checked>Google Play</input>
-	<input type="radio" name="os" value="ios" >Apple App Store</input>
--->
-	<br>
-	<br>
+      <button id="submit1" type="submit" class="btn btn-primary">Search and download CSV</button>
+    </fieldset>
+  </form>
 
-	<input id="submit1" type="submit" value="Submit">
-	</fieldset>
+  <div id="status" class="alert" style="display:none" role="status" aria-live="polite"></div>
 
-</form>
+  <p class="text-muted small">
+    Large searches can take a minute or more. If the site has been idle, the first visit may also take
+    up to a minute to wake up.
+  </p>
 </div>
-
-<!--
-<button type="button" id="b_1" onclick="document.getElementById('b_1').innerHTML='Searching...'; showElement('a_1');">Search!</button>
-<a href="/mgh/mgh-scrap/output/a_2_android.csv" id="a_1" download="output.csv" style="display: none" disabled>Download link</a>
-<p><strong>Note:</strong> This is a work in progress.</p>
 
 <script>
-function showElement(elem_id)
-{
-	document.getElementById(elem_id).style.display = "inline";
-}
+(function () {
+  var form = document.getElementById('search_form');
+  var fields = document.getElementById('fields');
+  var button = document.getElementById('submit1');
+  var statusBox = document.getElementById('status');
+  var timer = null;
 
+  function showStatus(kind, html) {
+    statusBox.className = 'alert alert-' + kind;
+    statusBox.innerHTML = html;
+    statusBox.style.display = 'block';
+  }
 
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+
+  function setBusy(busy) {
+    fields.disabled = busy;
+    button.textContent = busy ? 'Searching\u2026' : 'Search and download CSV';
+    if (!busy && timer) { clearInterval(timer); timer = null; }
+  }
+
+  function filenameFrom(response, fallback) {
+    var cd = response.headers.get('Content-Disposition') || '';
+    var m = /filename\*=UTF-8''([^;]+)/i.exec(cd) || /filename="?([^";]+)"?/i.exec(cd);
+    return m ? decodeURIComponent(m[1]) : fallback;
+  }
+
+  form.addEventListener('submit', function (event) {
+    event.preventDefault();
+    if (fields.disabled) { return; }
+
+    var data = new FormData(form);
+    var params = new URLSearchParams(data);
+    var storeName = data.get('os') === 'ios' ? 'the Apple App Store' : 'Google Play';
+    var label = 'Searching ' + storeName + ' for \u201c' + escapeHtml(data.get('search_query')) +
+                '\u201d (' + escapeHtml(data.get('n_results')) + ' results)\u2026 ';
+    var started = Date.now();
+
+    setBusy(true);
+    var tick = function () {
+      var secs = Math.round((Date.now() - started) / 1000);
+      showStatus('info', '<span class="spinner"></span>' + label + secs + 's');
+    };
+    tick();
+    timer = setInterval(tick, 1000);
+
+    fetch('/search_results?' + params.toString())
+      .then(function (response) {
+        if (!response.ok) {
+          return response.text().then(function (text) {
+            throw new Error(text || ('Server error ' + response.status));
+          });
+        }
+        var name = filenameFrom(response, 'results.csv');
+        return response.blob().then(function (blob) { return { blob: blob, name: name }; });
+      })
+      .then(function (result) {
+        var url = URL.createObjectURL(result.blob);
+        var a = document.createElement('a');
+        a.href = url;
+        a.download = result.name;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(function () { URL.revokeObjectURL(url); }, 10000);
+        var secs = Math.round((Date.now() - started) / 1000);
+        setBusy(false);
+        showStatus('success', '<strong>Done</strong> in ' + secs + 's: <code>' +
+                   escapeHtml(result.name) + '</code> downloaded.');
+      })
+      .catch(function (err) {
+        setBusy(false);
+        showStatus('danger', '<strong>Search failed.</strong> ' + escapeHtml(err.message) +
+                   '<br>Please try again in a minute.');
+      });
+  });
+})();
 </script>
--->
-</div>
 </body>
 </html>

@@ -5,12 +5,12 @@
     "start": "node app_search.js"
   },
   "engines": {
-    "node": "18.x"
+    "node": "22.x"
   },
   "dependencies": {
     "app-store-scraper": "^0.17.0",
     "express": "^4.17.3",
-    "google-play-scraper": "^9.1.1",
+    "google-play-scraper": "^10.1.4",
     "json2csv": "^5.0.7",
     "update": "^0.7.4"
   }
