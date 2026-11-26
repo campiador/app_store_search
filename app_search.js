@@ -127,51 +127,57 @@ app.get('/search_results', function (req, res) {
   }
 });
 
-/* Google Play search results only have basic fields, so look up each app's full details
-   (what fullDetail: true used to do). Each lookup is retried; if it still fails, the app keeps
-   its basic search fields instead of failing the whole search. A few lookups run at a time. */
-async function add_android_details(apps) {
+/* Run fn on each item, a few at a time, retrying failures. If an item still fails,
+   fallback(item, error) is used instead, so one bad lookup can't fail a whole search. */
+async function map_with_retry(items, fn, fallback, label) {
   const CONCURRENCY = 10;
   const ATTEMPTS = 3;
-  const detailed = new Array(apps.length);
+  const out = new Array(items.length);
   let next = 0;
   let failed = 0;
 
-  async function lookup(app) {
+  async function run(item) {
     for (let attempt = 1; attempt <= ATTEMPTS; attempt++) {
       try {
-        return Object.assign({}, app, await gplay.app({ appId: app.appId }));
+        return await fn(item);
       } catch (e) {
         if (attempt === ATTEMPTS) {
           failed++;
-          console.error("Details failed for %s: %s", app.appId, e.message);
-          return app;
+          return fallback(item, e);
         }
-        await new Promise((r) => setTimeout(r, 500 * attempt));
+        await new Promise((r) => setTimeout(r, 1000 * attempt));
       }
     }
   }
 
   async function worker() {
-    while (next < apps.length) {
+    while (next < items.length) {
       const i = next++;
-      detailed[i] = await lookup(apps[i]);
+      out[i] = await run(items[i]);
     }
   }
 
-  await Promise.all(Array.from({ length: Math.min(CONCURRENCY, apps.length) }, worker));
-  if (failed) { console.log("%d of %d apps are missing full details", failed, apps.length); }
-  return detailed;
+  await Promise.all(Array.from({ length: Math.min(CONCURRENCY, items.length) }, worker));
+  if (failed) { console.log("%s: %d of %d lookups failed", label, failed, items.length); }
+  return out;
+}
+
+/* Google Play search results only have basic fields, so look up each app's full details
+   (what fullDetail: true used to do). If a lookup keeps failing, the app keeps its basic fields. */
+function add_android_details(apps) {
+  return map_with_retry(apps,
+    async (app) => Object.assign({}, app, await gplay.app({ appId: app.appId })),
+    (app) => app,
+    "Google Play details");
 }
 
 /* Apple's search results don't include the number of ratings, so look each app up.
-   If a lookup fails, that app's rating count is reported as N/A instead of failing the search. */
+   If a lookup keeps failing, that app's rating count is reported as N/A. */
 async function add_ios_ratings(apps, appStore) {
-  const results = await Promise.allSettled(
-    apps.map((app) => appStore.ratings({ id: app.id }))
-  );
-  results.forEach((result, i) => {
-    apps[i].ratings = result.status === 'fulfilled' ? result.value.ratings : 'N/A';
-  });
+  const counts = await map_with_retry(apps,
+    async (app) => (await appStore.ratings({ id: app.id })).ratings,
+    () => 'N/A',
+    "App Store ratings");
+  apps.forEach((app, i) => { app.ratings = counts[i]; });
   return apps;
 }
