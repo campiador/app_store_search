@@ -9,9 +9,9 @@ var app = express();
 const PORT = process.env.PORT || 5000;
 // iOS "ratings" is Apple's userRatingCount from the search results. (The old per-app
 // ratings lookup misread counts of 1,000+, e.g. "4,930 Ratings" became 4.)
-// The paper used 200 results per search. Google Play allows up to 250 (but currently
-// returns only about 30); the Apple App Store returns about 200 at most.
-const MAX_RESULTS = 200;
+// The paper used 200 results per search. Google Play's scraper allows up to 250 (Google
+// currently returns only about 30); Apple has about 250 results per search at most.
+const MAX_RESULTS = 250;
 
 // Each search briefly uses 100-200 MB; Render's free instance has 512 MB.
 // Run at most MAX_ACTIVE searches at once; others wait their turn.
@@ -70,6 +70,7 @@ app.get('/search_results', function (req, res) {
     console.log("Search finished: %d results", data.length);
     var safe_term = input_term.replace(/[^A-Za-z0-9-]+/g, '_');
     res.attachment(safe_term + "_" + input_limit + "_" + input_store + '.csv');
+    res.set('X-Result-Count', String(data.length));
     res.status(200).send(csv_data);
   }
 
@@ -137,7 +138,7 @@ app.get('/search_results', function (req, res) {
       search = gplay.search({ term: input_term, num: input_limit })
         .then((apps) => add_android_details(apps.map(slim)));
     } else { // ios
-      search = appleStore.search({ term: input_term, num: input_limit, page: 1, country: 'us' })
+      search = ios_search(input_term, input_limit)
         .then((apps) => apps.map((app) => Object.assign(slim(app), { ratings: app.reviews })));
     }
     return search.then(send_csv).catch(send_error);
@@ -186,4 +187,20 @@ function add_android_details(apps) {
     async (app) => slim(Object.assign({}, app, await gplay.app({ appId: app.appId }))),
     (app) => app,
     "Google Play details");
+}
+
+/* Apple's search has up to ~250 results, but looking them all up in one request silently
+   drops some (only ~210 come back). Fetch them in pages of 100, keeping Apple's order. */
+async function ios_search(term, limit) {
+  const PAGE = 100;
+  const seen = new Set();
+  const out = [];
+  for (let page = 1; out.length < limit; page++) {
+    const batch = await appleStore.search({ term: term, num: PAGE, page: page, country: 'us' });
+    batch.forEach((app) => {
+      if (!seen.has(app.id) && out.length < limit) { seen.add(app.id); out.push(app); }
+    });
+    if (batch.length < PAGE) { break; }
+  }
+  return out;
 }

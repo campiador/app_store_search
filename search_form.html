@@ -32,9 +32,9 @@
       </div>
 
       <div class="form-group">
-        <label for="n_results">Number of results (1&ndash;200)</label>
+        <label for="n_results">Number of results (1&ndash;250)</label>
         <input class="form-control" type="number" id="n_results" name="n_results"
-               min="1" max="200" value="200" required>
+               min="1" max="250" value="200" required>
       </div>
 
       <div class="form-group">
@@ -50,7 +50,8 @@
   <div id="status" class="alert" style="display:none" role="status" aria-live="polite"></div>
 
   <p class="text-muted small">
-    Large searches can take a minute or more. If the site has been idle, the first visit may also take
+    The stores limit how many apps a search returns: currently about 250 for the Apple App Store and
+    about 30 for Google Play. The paper used 200 per search. Large searches can take a minute or more. If the site has been idle, the first visit may also take
     up to a minute to wake up.
   </p>
 </div>
@@ -114,7 +115,8 @@
           });
         }
         var name = filenameFrom(response, 'results.csv');
-        return response.blob().then(function (blob) { return { blob: blob, name: name }; });
+        var count = response.headers.get('X-Result-Count');
+        return response.blob().then(function (blob) { return { blob: blob, name: name, count: count }; });
       })
       .then(function (result) {
         var url = URL.createObjectURL(result.blob);
@@ -127,8 +129,12 @@
         setTimeout(function () { URL.revokeObjectURL(url); }, 10000);
         var secs = Math.round((Date.now() - started) / 1000);
         setBusy(false);
+        var requested = parseInt(data.get('n_results'), 10);
+        var got = result.count === null ? null : parseInt(result.count, 10);
+        var countText = got === null ? '' : ' ' + got + ' apps' +
+          (got < requested ? ' (you asked for ' + requested + '; that is all the store returned)' : '') + '.';
         showStatus('success', '<strong>Done</strong> in ' + secs + 's: <code>' +
-                   escapeHtml(result.name) + '</code> downloaded.');
+                   escapeHtml(result.name) + '</code> downloaded.' + countText);
       })
       .catch(function (err) {
         setBusy(false);
