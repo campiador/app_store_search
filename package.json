@@ -1,6 +1,7 @@
 {
   "name": "app-store-search",
   "private": true,
+  "license": "MIT",
   "scripts": {
     "start": "node --max-old-space-size=256 app_search.js"
   },
@@ -11,7 +12,6 @@
     "app-store-scraper": "^0.18.0",
     "express": "^4.17.3",
     "google-play-scraper": "^10.1.4",
-    "json2csv": "^5.0.7",
-    "update": "^0.7.4"
+    "json2csv": "^5.0.7"
   }
 }
